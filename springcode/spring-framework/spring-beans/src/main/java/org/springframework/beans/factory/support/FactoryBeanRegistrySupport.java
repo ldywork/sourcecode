@@ -32,6 +32,7 @@ import org.springframework.beans.factory.FactoryBeanNotInitializedException;
 
 /**
  * Support base class for singleton registries which need to handle
+ * 支持基类单例注册需要处理,需要FactoryBean实例
  * {@link org.springframework.beans.factory.FactoryBean} instances,
  * integrated with {@link DefaultSingletonBeanRegistry}'s singleton management.
  *
