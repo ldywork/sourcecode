@@ -44,17 +44,20 @@ import org.springframework.beans.factory.FactoryBeanNotInitializedException;
 public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanRegistry {
 
 	/** Cache of singleton objects created by FactoryBeans: FactoryBean name --> object */
+	//缓存被bean工厂创建的单例
 	private final Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<String, Object>(16);
 
 
 	/**
 	 * Determine the type for the given FactoryBean.
+	 * 决定被给与的工厂的类型
 	 * @param factoryBean the FactoryBean instance to check
 	 * @return the FactoryBean's object type,
 	 * or {@code null} if the type cannot be determined yet
 	 */
 	protected Class<?> getTypeForFactoryBean(final FactoryBean<?> factoryBean) {
 		try {
+			//用来判断是否能够安全的执行某个操作
 			if (System.getSecurityManager() != null) {
 				return AccessController.doPrivileged(new PrivilegedAction<Class<?>>() {
 					@Override
@@ -78,6 +81,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	/**
 	 * Obtain an object to expose from the given FactoryBean, if available
 	 * in cached form. Quick check for minimal synchronization.
+	 * 从给定的FactoryBean公开获取了一个对象,如果可用在缓存的形式。快速检查最小同步。
 	 * @param beanName the name of the bean
 	 * @return the object obtained from the FactoryBean,
 	 * or {@code null} if not available
@@ -88,7 +92,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	}
 
 	/**
-	 * Obtain an object to expose from the given FactoryBean.
+	 * Obtain an object to expose from the given FactoryBean.获取一个对象从给定FactoryBean暴露。
 	 * @param factory the FactoryBean instance
 	 * @param beanName the name of the bean
 	 * @param shouldPostProcess whether the bean is subject to post-processing
