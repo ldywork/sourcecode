@@ -1,0 +1,330 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>23.&nbsp;Reactive Web Applications</title><link rel="stylesheet" type="text/css" href="css/manual-multipage.css"><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"><link rel="home" href="index.html" title="Spring Framework Reference Documentation"><link rel="up" href="spring-web.html" title="Part&nbsp;V.&nbsp;The Web"><link rel="prev" href="websocket.html" title="22.&nbsp;WebSocket Support"><link rel="next" href="spring-integration.html" title="Part&nbsp;VI.&nbsp;Integration"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">23.&nbsp;Reactive Web Applications</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="websocket.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;V.&nbsp;The Web</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="spring-integration.html">Next</a></td></tr></table><hr></div><div class="chapter"><div class="titlepage"><div><div><h2 class="title"><a name="web-reactive" href="#web-reactive"></a>23.&nbsp;Reactive Web Applications</h2></div></div></div>
+
+<p>This section provides basic information on the reactive programming
+support for Web applications in Spring Framework 5.</p>
+<div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="web-reactive-intro" href="#web-reactive-intro"></a>23.1&nbsp;Introduction</h2></div></div></div>
+
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-programming" href="#web-reactive-programming"></a>23.1.1&nbsp;What is Reactive Programming?</h3></div></div></div>
+
+<p>In plain terms reactive programming is about non-blocking applications that are asynchronous
+and event-driven and require a small number of threads to scale vertically (i.e. within the
+JVM) rather than horizontally (i.e. through clustering).</p>
+<p>A key aspect of reactive applications is the concept of backpressure which is
+a mechanism to ensure producers don&#8217;t overwhelm consumers. For example in a pipeline
+of reactive components extending from the database to the HTTP response when the
+HTTP connection is too slow the data repository can also slow down or stop completely
+until network capacity frees up.</p>
+<p>Reactive programming also leads to a major shift from imperative to declarative async
+composition of logic. It is comparable to writing blocking code vs using the
+<code class="literal">CompletableFuture</code> from Java 8 to compose follow-up actions via lambda expressions.</p>
+<p>For a longer introduction check the blog series
+<a class="ulink" href="https://spring.io/blog/2016/06/07/notes-on-reactive-programming-part-i-the-reactive-landscape" target="_top">"Notes on Reactive Programming"</a>
+by Dave Syer.</p>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-api" href="#web-reactive-api"></a>23.1.2&nbsp;Reactive API and Building Blocks</h3></div></div></div>
+
+<p>Spring Framework 5 embraces
+<a class="ulink" href="https://github.com/reactive-streams/reactive-streams-jvm#reactive-streams" target="_top">Reactive Streams</a>
+as the contract for communicating backpressure across async components and
+libraries. Reactive Streams is a specification created through industry collaboration that
+has also been adopted in Java 9 as <code class="literal">java.util.concurrent.Flow</code>.</p>
+<p>The Spring Framework uses <a class="ulink" href="https://projectreactor.io/" target="_top">Reactor</a> internally for its own
+reactive support. Reactor is a Reactive Streams implementation that further extends the
+basic Reactive Streams <code class="literal">Publisher</code> contract with the <code class="literal">Flux</code> and <code class="literal">Mono</code> composable API
+types to provide declarative operations on data sequences of <code class="literal">0..N</code> and <code class="literal">0..1</code>.</p>
+<p>The Spring Framework exposes <code class="literal">Flux</code> and <code class="literal">Mono</code> in many of its own reactive APIs.
+At the application level however, as always, Spring provides choice and fully supports
+the use of RxJava. For more on reactive types check the post
+<a class="ulink" href="https://spring.io/blog/2016/04/19/understanding-reactive-types" target="_top">"Understanding Reactive Types"</a>
+by Sebastien Deleuze.</p>
+</div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="web-reactive-feature-overview" href="#web-reactive-feature-overview"></a>23.2&nbsp;Spring Web Reactive Module</h2></div></div></div>
+
+<p>Spring Framework 5 includes a new <code class="literal">spring-web-reactive</code> module. The module contains support
+for reactive HTTP and WebSocket clients as well as for reactive server web applications
+including REST, HTML browser, and WebSocket style interactions.</p>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-server" href="#web-reactive-server"></a>23.2.1&nbsp;Server Side</h3></div></div></div>
+
+<p>On the server-side the new reactive module supports 2 distinct programming models:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Annotation-based with <code class="literal">@Controller</code> and the other annotations supported also with Spring MVC
+</li><li class="listitem">
+Functional, Java 8 lambda style routing and handling
+</li></ul></div>
+<p>Both programming models are executed on the same reactive foundation that adapts
+non-blocking HTTP runtimes to the Reactive Streams API. The diagram
+below shows the server-side stack including traditional, Servlet-based
+Spring MVC on the left from the <code class="literal">spring-web-mvc</code> module and also the
+reactive stack on the right from the <code class="literal">spring-web-reactive</code> module.</p>
+<div class="informalfigure">
+<div class="mediaobject"><img src="images/web-reactive-overview.png" alt="web reactive overview"></div>
+</div>
+<p>The new reactive stack can run on Servlet containers with support for the
+Servlet 3.1 Non-Blocking IO API as well as on other async runtimes such as
+Netty and Undertow. Each runtime is adapted to a reactive
+<code class="literal">ServerHttpRequest</code> and <code class="literal">ServerHttpResponse</code> exposing the body of the
+request and response as <code class="literal">Flux&lt;DataBuffer&gt;</code>, rather than
+<code class="literal">InputStream</code> and <code class="literal">OutputStream</code>, with reactive backpressure.
+REST-style JSON and XML serialization and deserialization is supported on top
+as a <code class="literal">Flux&lt;Object&gt;</code>, and so is HTML view rendering and Server-Sent Events.</p>
+<div class="section"><div class="titlepage"><div><div><h4 class="title"><a name="web-reactive-server-annotation" href="#web-reactive-server-annotation"></a>Annotation-based Programming Model</h4></div></div></div>
+
+<p>The same <code class="literal">@Controller</code> programming model and the same annotations used in Spring MVC
+are also supported on the reactive side. The main difference is that the framework
+contracts underneath&#8201;&#8212;&#8201;i.e. <code class="literal">HandlerMapping</code>, <code class="literal">HandlerAdapter</code>, are
+non-blocking and operate on the reactive <code class="literal">ServerHttpRequest</code> and <code class="literal">ServerHttpResponse</code>
+rather than on the <code class="literal">HttpServletRequest</code> and <code class="literal">HttpServletResponse</code>.
+Below is an example with a reactive controller:</p>
+<pre class="programlisting"><em><span class="hl-annotation" style="color: gray">@RestController</span></em>
+<span class="hl-keyword">public</span> <span class="hl-keyword">class</span> PersonController {
+
+	<span class="hl-keyword">private</span> <span class="hl-keyword">final</span> PersonRepository repository;
+
+	<span class="hl-keyword">public</span> PersonController(PersonRepository repository) {
+		<span class="hl-keyword">this</span>.repository = repository;
+	}
+
+	<em><span class="hl-annotation" style="color: gray">@PostMapping("/person")</span></em>
+	Mono&lt;Void&gt; create(<em><span class="hl-annotation" style="color: gray">@RequestBody</span></em> Publisher&lt;Person&gt; personStream) {
+		<span class="hl-keyword">return</span> <span class="hl-keyword">this</span>.repository.save(personStream).then();
+	}
+
+	<em><span class="hl-annotation" style="color: gray">@GetMapping("/person")</span></em>
+	Flux&lt;Person&gt; list() {
+		<span class="hl-keyword">return</span> <span class="hl-keyword">this</span>.repository.findAll();
+	}
+
+	<em><span class="hl-annotation" style="color: gray">@GetMapping("/person/{id}")</span></em>
+	Mono&lt;Person&gt; findById(<em><span class="hl-annotation" style="color: gray">@PathVariable</span></em> String id) {
+		<span class="hl-keyword">return</span> <span class="hl-keyword">this</span>.repository.findOne(id);
+	}
+}</pre>
+</div>
+<div class="section"><div class="titlepage"><div><div><h4 class="title"><a name="web-reactive-server-functional" href="#web-reactive-server-functional"></a>Functional Programming Model</h4></div></div></div>
+
+<p>The functional programming model uses Java 8 lambda style routing and request
+handling instead of annotations. The main API contracts are functional interfaces named
+<code class="literal">RouterFunction</code> and <code class="literal">HandlerFunction</code>. They are simple but powerful building blocks
+for creating web applications. Below is an example of functional request handling:</p>
+<pre class="programlisting">PersonRepository repository = ...
+
+RouterFunctions
+	.route(GET(<span class="hl-string">"/person/{id}"</span>).and(accept(APPLICATION_JSON)), request -&gt; {
+		<span class="hl-keyword">int</span> personId = Integer.valueOf(request.pathVariable(<span class="hl-string">"id"</span>));
+		Mono&lt;ServerResponse&gt; notFound = ServerResponse.notFound().build();
+		<span class="hl-keyword">return</span> repository.findOne(personId)
+				.then(person -&gt; ServerResponse.ok().body(Mono.just(person), Person.<span class="hl-keyword">class</span>))
+				.otherwiseIfEmpty(notFound);
+	})
+	.andRoute(GET(<span class="hl-string">"/person"</span>).and(accept(APPLICATION_JSON)), request -&gt;
+			ServerResponse.ok().body(repository.findAll(), Person.<span class="hl-keyword">class</span>))
+	.andRoute(POST(<span class="hl-string">"/person"</span>).and(contentType(APPLICATION_JSON)), request -&gt;
+			ServerResponse.ok().build(repository.save(request.bodyToMono(Person.<span class="hl-keyword">class</span>))));</pre>
+<p>For more on the functional programming model see the
+<a class="ulink" href="https://spring.io/blog/2016/09/22/new-in-spring-5-functional-web-framework" target="_top">M3 release blog post</a>.</p>
+</div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-client" href="#web-reactive-client"></a>23.2.2&nbsp;Client Side</h3></div></div></div>
+
+<p>Spring Framework 5 includes a functional, reactive <code class="literal">WebClient</code> that offers a fully
+non-blocking and reactive alternative to the <code class="literal">RestTemplate</code>. It exposes network
+input and output as a reactive <code class="literal">ClientHttpRequest</code> and <code class="literal">ClientHttpRespones</code> where
+the body of the request and response is a <code class="literal">Flux&lt;DataBuffer&gt;</code> rather than an
+<code class="literal">InputStream</code> and <code class="literal">OutputStream</code>. In addition it supports the same reactive JSON, XML,
+and SSE serialization mechanism as on the server side so you can work with typed objects.
+Below is an example of using the <code class="literal">WebClient</code> which requires a <code class="literal">ClientHttpConnector</code>
+implementation to plug in a specific HTTP client such as Reactor Netty:</p>
+<pre class="programlisting">WebClient client = WebClient.create(<span class="hl-keyword">new</span> ReactorClientHttpConnector());
+
+ClientRequest&lt;Void&gt; request = ClientRequest
+		.GET(<span class="hl-string">"http://example.com/accounts/{id}"</span>, <span class="hl-number">1L</span>)
+		.accept(APPLICATION_JSON)
+		.build();
+
+Mono&lt;Account&gt; account = client
+		.exchange(request)
+		.then(response -&gt; response.bodyToMono(Account.<span class="hl-keyword">class</span>));</pre>
+<div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/note.png"></td><th align="left">Note</th></tr><tr><td align="left" valign="top">
+<p>The <code class="literal">AsyncRestTemplate</code> also supports non-blocking interactions. The main difference
+is it can&#8217;t support non-blocking streaming, like for example
+<a class="ulink" href="https://dev.twitter.com/streaming/overview" target="_top">Twitter one</a>, because fundamentally it&#8217;s
+still based and relies on <code class="literal">InputStream</code> and <code class="literal">OutputStream</code>.</p>
+</td></tr></table></div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-http-body" href="#web-reactive-http-body"></a>23.2.3&nbsp;Request and Response Body Conversion</h3></div></div></div>
+
+<p>The <code class="literal">spring-core</code> module provides reactive <code class="literal">Encoder</code> and <code class="literal">Decoder</code> contracts
+that enable the serialization of a <code class="literal">Flux</code> of bytes to and from typed objects.
+The <code class="literal">spring-web</code> module adds JSON (Jackson) and XML (JAXB) implementations for use in
+web applications as well as others for SSE streaming and zero-copy file transfer.</p>
+<p>For example the request body can be one of the following way and it will be decoded
+automatically in both the annotation and the functional programming models:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">Account account</code>&#8201;&#8212;&#8201;the account is deserialized without blocking before the controller is invoked.
+</li><li class="listitem">
+<code class="literal">Mono&lt;Account&gt; account</code>&#8201;&#8212;&#8201;the controller can use the <code class="literal">Mono</code> to declare logic to be executed after the account is deserialized.
+</li><li class="listitem">
+<code class="literal">Single&lt;Account&gt; account</code>&#8201;&#8212;&#8201;same as with <code class="literal">Mono</code> but using RxJava
+</li><li class="listitem">
+<code class="literal">Flux&lt;Account&gt; accounts</code>&#8201;&#8212;&#8201;input streaming scenario.
+</li><li class="listitem">
+<code class="literal">Observable&lt;Account&gt; accounts</code>&#8201;&#8212;&#8201;input streaming with RxJava.
+</li></ul></div>
+<p>The response body can be one of the following:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">Mono&lt;Account&gt;</code>&#8201;&#8212;&#8201;serialize without blocking the given Account when the <code class="literal">Mono</code> completes.
+</li><li class="listitem">
+<code class="literal">Single&lt;Account&gt;</code>&#8201;&#8212;&#8201;same but using RxJava.
+</li><li class="listitem">
+<code class="literal">Flux&lt;Account&gt;</code>&#8201;&#8212;&#8201;streaming scenario, possibly SSE depending on the requested content type.
+</li><li class="listitem">
+<code class="literal">Observable&lt;Account&gt;</code>&#8201;&#8212;&#8201;same but using RxJava <code class="literal">Observable</code> type.
+</li><li class="listitem">
+<code class="literal">Flowable&lt;Account&gt;</code>&#8201;&#8212;&#8201;same but using RxJava 2 <code class="literal">Flowable</code> type.
+</li><li class="listitem">
+<code class="literal">Flux&lt;ServerSentEvent&gt;</code>&#8201;&#8212;&#8201;SSE streaming.
+</li><li class="listitem">
+<code class="literal">Mono&lt;Void&gt;</code>&#8201;&#8212;&#8201;request handling completes when the <code class="literal">Mono</code> completes.
+</li><li class="listitem">
+<code class="literal">Account</code>&#8201;&#8212;&#8201;serialize without blocking the given Account; implies a synchronous, non-blocking controller method.
+</li><li class="listitem">
+<code class="literal">void</code>&#8201;&#8212;&#8201;specific to the annotation-based programming model, request handling completes
+when the method returns; implies a synchronous, non-blocking controller method.
+</li></ul></div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-websocket-support" href="#web-reactive-websocket-support"></a>23.2.4&nbsp;Reactive WebSocket Support</h3></div></div></div>
+
+<p>The Spring Framework 5 <code class="literal">spring-web-reactive</code> module includes reactive WebSocket
+client and server support. Both client and server are supported on the Java WebSocket API
+(JSR-356), Jetty, Undertow, Reactor Netty, and RxNetty.</p>
+<p>On the server side, declare a <code class="literal">WebSocketHandlerAdapter</code> and then simply add
+mappings to <code class="literal">WebSocketHandler</code>-based endpoints:</p>
+<pre class="programlisting"><em><span class="hl-annotation" style="color: gray">@Bean</span></em>
+<span class="hl-keyword">public</span> HandlerMapping webSocketMapping() {
+	Map&lt;String, WebSocketHandler&gt; map = <span class="hl-keyword">new</span> HashMap&lt;&gt;();
+	map.put(<span class="hl-string">"/foo"</span>, <span class="hl-keyword">new</span> FooWebSocketHandler());
+	map.put(<span class="hl-string">"/bar"</span>, <span class="hl-keyword">new</span> BarWebSocketHandler());
+
+	SimpleUrlHandlerMapping mapping = <span class="hl-keyword">new</span> SimpleUrlHandlerMapping();
+	mapping.setUrlMap(map);
+	<span class="hl-keyword">return</span> mapping;
+}
+
+<em><span class="hl-annotation" style="color: gray">@Bean</span></em>
+<span class="hl-keyword">public</span> WebSocketHandlerAdapter handlerAdapter() {
+	<span class="hl-keyword">return</span> <span class="hl-keyword">new</span> WebSocketHandlerAdapter();
+}</pre>
+<p>On the client side create a <code class="literal">WebSocketClient</code> for one of the supported libraries
+listed above:</p>
+<pre class="programlisting">WebSocketClient client = <span class="hl-keyword">new</span> ReactorNettyWebSocketClient();
+client.execute(<span class="hl-string">"ws://localhost:8080/echo"</span>), session -&gt; {... }).blockMillis(<span class="hl-number">5000</span>);</pre>
+</div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="web-reactive-getting-started" href="#web-reactive-getting-started"></a>23.3&nbsp;Getting Started</h2></div></div></div>
+
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-getting-started-boot" href="#web-reactive-getting-started-boot"></a>23.3.1&nbsp;Spring Boot Starter</h3></div></div></div>
+
+<p>The
+<a class="ulink" href="https://github.com/bclozel/spring-boot-web-reactive#spring-boot-web-reactive-starter" target="_top">Spring Boot Web Reactive starter</a>
+available via <a class="ulink" href="http://start.spring.io" target="_top">http://start.spring.io</a> is the fastest way to get started.
+It does all that&#8217;s necessary so you to start writing <code class="literal">@Controller</code> classes
+just like with Spring MVC. Simply go to <a class="ulink" href="http://start.spring.io" target="_top">http://start.spring.io</a>, choose
+version 2.0.0.BUILD-SNAPSHOT, and type reactive in the dependencies box.
+By default the starter runs with Tomcat but the dependencies can be changed as usual with Spring Boot to switch to a different runtime.
+See the
+<a class="ulink" href="https://github.com/bclozel/spring-boot-web-reactive#spring-boot-web-reactive-starter" target="_top">starter</a>
+page for more details and instruction</p>
+<p>There is no Spring Boot Starter for the functional programming model yet but
+it&#8217;s very easy to try it out. See the next section on "Manual Bootstrapping".</p>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-getting-started-manual" href="#web-reactive-getting-started-manual"></a>23.3.2&nbsp;Manual Bootstrapping</h3></div></div></div>
+
+<p>This section outlines the steps to get up and running manually.</p>
+<p>For dependencies start with <code class="literal">spring-web-reactive</code> and <code class="literal">spring-context</code>.
+Then add <code class="literal">jackson-databind</code> and <code class="literal">io.netty:netty-buffer</code>
+(temporarily see <a class="ulink" href="https://jira.spring.io/browse/SPR-14528" target="_top">SPR-14528</a>) for JSON support.
+Lastly add the dependencies for one of the supported runtimes:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Tomcat&#8201;&#8212;&#8201;<code class="literal">org.apache.tomcat.embed:tomcat-embed-core</code>
+</li><li class="listitem">
+Jetty&#8201;&#8212;&#8201;<code class="literal">org.eclipse.jetty:jetty-server</code> and <code class="literal">org.eclipse.jetty:jetty-servlet</code>
+</li><li class="listitem">
+Reactor Netty&#8201;&#8212;&#8201;<code class="literal">io.projectreactor.ipc:reactor-netty</code>
+</li><li class="listitem">
+RxNetty&#8201;&#8212;&#8201;<code class="literal">io.reactivex:rxnetty-common</code> and <code class="literal">io.reactivex:rxnetty-http</code>
+</li><li class="listitem">
+Undertow&#8201;&#8212;&#8201;<code class="literal">io.undertow:undertow-core</code>
+</li></ul></div>
+<p>For the <span class="strong"><strong>annotation-based programming model</strong></span> bootstrap with:</p>
+<pre class="programlisting">ApplicationContext context = <span class="hl-keyword">new</span> AnnotationConfigApplicationContext(DelegatingWebReactiveConfiguration.<span class="hl-keyword">class</span>);  <span class="hl-comment">// (1)</span>
+HttpHandler handler = DispatcherHandler.toHttpHandler(context);  <span class="hl-comment">// (2)</span></pre>
+<p>The above loads default Spring Web framework configuration (1), then creates a
+<code class="literal">DispatcherHandler</code>, the main class driving request processing (2), and adapts
+it to <code class="literal">HttpHandler</code>&#8201;&#8212;&#8201;the lowest level Spring abstraction for reactive HTTP request handling.</p>
+<p>For the <span class="strong"><strong>functional programming model</strong></span> bootstrap as follows:</p>
+<pre class="programlisting">ApplicationContext context = <span class="hl-keyword">new</span> AnnotationConfigApplicationContext(); <span class="hl-comment">// (1)</span>
+context.registerBean(FooBean.<span class="hl-keyword">class</span>, () -&gt; <span class="hl-keyword">new</span> FooBeanImpl()); <span class="hl-comment">// (2)</span>
+context.registerBean(BarBean.<span class="hl-keyword">class</span>); <span class="hl-comment">// (3)</span>
+
+HttpHandler handler = WebHttpHandlerBuilder
+		.webHandler(RouterFunctions.toHttpHandler(...))
+		.applicationContext(context)
+		.build(); <span class="hl-comment">// (4)</span></pre>
+<p>The above creates an <code class="literal">AnnotationConfigApplicationContext</code> instance (1) that can take advantage
+of the new functional bean registration API (2) to register beans using a Java 8 <code class="literal">Supplier</code>
+or just by specifying its class (3). The <code class="literal">HttpHandler</code> is created using <code class="literal">WebHttpHandlerBuilder</code> (4).</p>
+<p>The <code class="literal">HttpHandler</code> can then be installed in one of the supported runtimes:</p>
+<pre class="programlisting"><span class="hl-comment">// Tomcat and Jetty (also see notes below)</span>
+HttpServlet servlet = <span class="hl-keyword">new</span> ServletHttpHandlerAdapter(handler);
+...
+
+<span class="hl-comment">// Reactor Netty</span>
+ReactorHttpHandlerAdapter adapter = <span class="hl-keyword">new</span> ReactorHttpHandlerAdapter(handler);
+HttpServer.create(host, port).newHandler(adapter).onClose().block();
+
+<span class="hl-comment">// RxNetty</span>
+RxNettyHttpHandlerAdapter adapter = <span class="hl-keyword">new</span> RxNettyHttpHandlerAdapter(handler);
+HttpServer server = HttpServer.newServer(<span class="hl-keyword">new</span> InetSocketAddress(host, port));
+server.startAndAwait(adapter);
+
+<span class="hl-comment">// Undertow</span>
+UndertowHttpHandlerAdapter adapter = <span class="hl-keyword">new</span> UndertowHttpHandlerAdapter(handler);
+Undertow server = Undertow.builder().addHttpListener(port, host).setHandler(adapter).build();
+server.start();</pre>
+<div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/note.png"></td><th align="left">Note</th></tr><tr><td align="left" valign="top">
+<p>For Servlet containers especially with WAR deployment you can use the
+<code class="literal">AbstractAnnotationConfigDispatcherHandlerInitializer</code> which as a
+<code class="literal">WebApplicationInitializer</code> and is auto-detected by Servlet containers.
+It takes care of registering the <code class="literal">ServletHttpHandlerAdapter</code> as shown above.
+You will need to implement one abstract method in order to point to your
+Spring configuration.</p>
+</td></tr></table></div>
+</div>
+<div class="section"><div class="titlepage"><div><div><h3 class="title"><a name="web-reactive-getting-started-examples" href="#web-reactive-getting-started-examples"></a>23.3.3&nbsp;Examples</h3></div></div></div>
+
+<p>You will find code examples useful to build reactive Web application in the following projects:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<a class="ulink" href="https://github.com/bclozel/spring-boot-web-reactive" target="_top">Spring Boot Web Reactive Starter</a>: sources of the reactive starter available at <a class="ulink" href="http://start.spring.io" target="_top">http://start.spring.io</a>
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/poutsma/web-function-sample" target="_top">Functional programming model sample</a>
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/sdeleuze/spring-reactive-playground" target="_top">Spring Reactive Playground</a>: playground for most Spring Web reactive features
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/reactor/projectreactor.io/tree/spring-functional" target="_top">Reactor website</a>: the <code class="literal">spring-functional</code> branch is a Spring 5 functional, Java 8 lambda-style application
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/bclozel/spring-reactive-university" target="_top">Spring Reactive University session</a>: live-coded project from <a class="ulink" href="https://www.youtube.com/watch?v=Cj4foJzPF80" target="_top">this Devoxx BE 2106 university talk</a>
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/thymeleaf/thymeleafsandbox-biglist-reactive" target="_top">Reactive Thymeleaf Sandbox</a>
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/mix-it/mixit/" target="_top">Mix-it 2017 website</a>: Kotlin + Reactive + Functional web and bean registration API application
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/simonbasle/reactor-by-example" target="_top">Reactor by example</a>: code snippets coming from this <a class="ulink" href="https://www.infoq.com/articles/reactor-by-example" target="_top">InfoQ article</a>
+</li><li class="listitem">
+<a class="ulink" href="https://github.com/spring-projects/spring-framework/tree/master/spring-web-reactive/src/test/java/org/springframework/web/reactive/result/method/annotation" target="_top">Spring integration tests</a>: various features tested with Reactor <a class="ulink" href="https://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html" target="_top"><code class="literal">StepVerifier</code></a>
+</li></ul></div>
+</div>
+</div>
+</div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="websocket.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="spring-web.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="spring-integration.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">22.&nbsp;WebSocket Support&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Part&nbsp;VI.&nbsp;Integration</td></tr></table></div></body></html>
